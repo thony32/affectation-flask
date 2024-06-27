@@ -31,7 +31,6 @@ def login():
 @employee_api.route("/employees", methods=["POST"])
 def add_employee():
     data = request.get_json()
-    # Map JSON keys to function parameters
     try:
         new_employee = create_employee(
             username=data["username"],
@@ -42,45 +41,44 @@ def add_employee():
         )
         return jsonify({"message": "Employee added", "id": new_employee.id}), 201
     except KeyError as e:
-        # Handle missing data cases
         return jsonify({"error": f"Missing data for required field: {str(e)}"}), 400
     except Exception as e:
-        # Generic error handling
         return jsonify({"error": str(e)}), 500
+    
 
-
-@employee_api.route("/employees/<int:id>", methods=["GET", "PUT", "DELETE"])
-# @jwt_required()
-def handle_employee(id):
-    if request.method == "GET":
-        # NOTE: get by id
+# NOTE: Get an employee by id
+@employee_api.route("/employees/<int:id>", methods=["GET"])
+def get_employee(id):
+    try:
         employee = get_employee_by_id(id)
         if employee:
             return jsonify(employee.to_dict()), 200
         else:
             return jsonify({"error": "Employee not found"}), 404
-    elif request.method == "PUT":
-        # NOTE: update by id
-        data = request.get_json()
-        try:
-            employee = update_employee(id, **data)
-            if employee:
-                return jsonify(
-                    employee.to_dict()
-                ), 200  # Serialize the updated employee
-            else:
-                return jsonify({"error": "Unable to update employee"}), 400
-        except Exception as e:
-            print("Error updating employee:", str(e))  # Debugging output
-            return jsonify({"error": "Internal Server Error"}), 500
-    elif request.method == "DELETE":
-        try:
-            # NOTE: delete by id
-            success = delete_employee(id)
-            if success:
-                return "", 204  # No content to return
-            else:
-                return jsonify({"error": "Failed to delete employee"}), 404
-        except Exception as e:
-            print("Error deleting employee:", str(e))  # Debugging output
-            return jsonify({"error": "Internal Server Error"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# NOTE: Update an employee by id
+@employee_api.route("/employees/<int:id>", methods=["PUT"])
+def update_employee_by_id(id):
+    data = request.get_json()
+    try:
+        employee = update_employee(id, **data)
+        if employee:
+            return jsonify(employee.to_dict()), 200
+        else:
+            return jsonify({"error": "Unable to update employee"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# NOTE: Delete an employee by id    
+@employee_api.route("/employees/<int:id>", methods=["DELETE"])
+def delete_employee_by_id(id):
+    try:
+        success = delete_employee(id)
+        if success:
+            return jsonify({"message": "Employee deleted"}), 200
+        else:
+            return jsonify({"error": "Failed to delete employee"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
