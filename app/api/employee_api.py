@@ -1,9 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import (
-    JWTManager,
     create_access_token,
-    jwt_required,
-    get_jwt_identity,
+    # jwt_required,
 )
 from app.services.employee_service import (
     create_employee,
@@ -14,6 +12,7 @@ from app.services.employee_service import (
 )
 
 employee_api = Blueprint("employee_api", __name__)
+
 
 # NOTE: Authentication
 @employee_api.route("/login", methods=["POST"])
@@ -27,7 +26,8 @@ def login():
     else:
         return jsonify({"msg": "Bad username or password"}), 401
 
-# NOTE: Sign up
+
+# NOTE: Register (create employee)
 @employee_api.route("/employees", methods=["POST"])
 def add_employee():
     data = request.get_json()
@@ -35,9 +35,7 @@ def add_employee():
     try:
         new_employee = create_employee(
             username=data["username"],
-            first_name=data.get(
-                "first_name", ""
-            ),  # Default to an empty string if not provided
+            first_name=data.get("first_name", ""),
             last_name=data.get("last_name", ""),
             job=data.get("job", ""),
             password=data["password"],
@@ -52,18 +50,37 @@ def add_employee():
 
 
 @employee_api.route("/employees/<int:id>", methods=["GET", "PUT", "DELETE"])
-@jwt_required()
+# @jwt_required()
 def handle_employee(id):
     if request.method == "GET":
-        # FIXME: get by id
+        # NOTE: get by id
         employee = get_employee_by_id(id)
-        return jsonify(employee), 200
+        if employee:
+            return jsonify(employee.to_dict()), 200
+        else:
+            return jsonify({"error": "Employee not found"}), 404
     elif request.method == "PUT":
-        # REFACTOR: update
+        # NOTE: update by id
         data = request.get_json()
-        employee = update_employee(id, **data)
-        return jsonify(employee), 200
+        try:
+            employee = update_employee(id, **data)
+            if employee:
+                return jsonify(
+                    employee.to_dict()
+                ), 200  # Serialize the updated employee
+            else:
+                return jsonify({"error": "Unable to update employee"}), 400
+        except Exception as e:
+            print("Error updating employee:", str(e))  # Debugging output
+            return jsonify({"error": "Internal Server Error"}), 500
     elif request.method == "DELETE":
-        # NOTE: delete
-        employee = delete_employee(id)
-        return "", 204
+        try:
+            # NOTE: delete by id
+            success = delete_employee(id)
+            if success:
+                return "", 204  # No content to return
+            else:
+                return jsonify({"error": "Failed to delete employee"}), 404
+        except Exception as e:
+            print("Error deleting employee:", str(e))  # Debugging output
+            return jsonify({"error": "Internal Server Error"}), 500

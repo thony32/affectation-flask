@@ -18,7 +18,7 @@ def authenticate_employee(username, password):
         return employee
     return None
 
-# FIXME: get by id
+# NOTE: get by id
 def get_employee_by_id(employee_id):
     return Employee.query.get(employee_id)
 

@@ -12,6 +12,15 @@ class Employee(db.Model):
     job = db.Column(db.String(80), nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "job": self.job,
+        }
+
     def set_password(self, password):
         self.password_hash = sha256.hash(password)
 
